@@ -215,6 +215,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path=require("path")
 
 const chatRoutes = require("./routes/chat.routes");
 
@@ -223,7 +224,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes
+
+
+const _dirname=path.dirname("")
+const buildpath=path.join(_dirname,"../client/reactjs/build")
+app.use(express.static(buildpath))
 
 app.use("/api/auth", require("./routes/auth.routes"));
 
@@ -233,7 +238,7 @@ app.get("/api/dashboard", (req, res) => {
 });
 app.use("/api/chat", chatRoutes);
 
-// MongoDB
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.log("MongoDB error:", err));
