@@ -253,8 +253,9 @@
 
 
 
-require("dotenv").config();   // MUST be first line
-
+require("dotenv").config({
+  path: require("path").resolve(__dirname, ".env")
+});
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");

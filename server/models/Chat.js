@@ -56,6 +56,11 @@
 
 const mongoose = require("mongoose");
 
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.error("MongoDB error:", err));
+
 const chatSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   messages: [
