@@ -211,42 +211,83 @@
 
 
 
-require("dotenv").config({
-  path: require("path").resolve(__dirname, ".env"),
-});
+// require("dotenv").config({
+//   path: require("path").resolve(__dirname, ".env"),
+// });
+// const express = require("express");
+// const mongoose = require("mongoose");
+// const cors = require("cors");
+// const path=require("path")
+
+// const chatRoutes = require("./routes/chat.routes");
+
+// const app = express();
+
+// app.use(cors());
+// app.use(express.json());
+
+
+
+// const _dirname=path.dirname("")
+// const buildpath=path.join(_dirname,"../client/reactjs/build")
+// app.use(express.static(buildpath))
+
+// app.use("/api/auth", require("./routes/auth.routes"));
+
+
+// app.get("/api/dashboard", (req, res) => {
+//   res.json({ status: "ok", message: "Server working!" });
+// });
+// app.use("/api/chat", chatRoutes);
+
+
+// mongoose.connect(process.env.MONGO_URI)
+//   .then(() => console.log("MongoDB connected"))
+//   .catch(err => console.log("MongoDB error:", err));
+
+// const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => {
+//   console.log(`Server running on port ${PORT}`);
+//   console.log("OPENAI KEY:", process.env.OPENAI_API_KEY?.slice(0, 10));
+// });
+
+
+
+require("dotenv").config();   // MUST be first line
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const path=require("path")
+const path = require("path");
 
 const chatRoutes = require("./routes/chat.routes");
+const authRoutes = require("./routes/auth.routes");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+// Serve React build
+const buildPath = path.join(__dirname, "../client/reactjs/build");
+app.use(express.static(buildPath));
 
-
-const _dirname=path.dirname("")
-const buildpath=path.join(_dirname,"../client/reactjs/build")
-app.use(express.static(buildpath))
-
-app.use("/api/auth", require("./routes/auth.routes"));
-
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.get("/api/dashboard", (req, res) => {
   res.json({ status: "ok", message: "Server working!" });
 });
-app.use("/api/chat", chatRoutes);
 
-
+// MongoDB
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log("MongoDB error:", err));
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.error("❌ MongoDB error:", err));
 
-const PORT = process.env.PORT || 5000;
+// Port
+const PORT = process.env.PORT || 8000;
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log("OPENAI KEY:", process.env.OPENAI_API_KEY?.slice(0, 10));
+  console.log(`✅ Server running on port ${PORT}`);
 });

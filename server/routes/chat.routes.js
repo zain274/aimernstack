@@ -693,16 +693,78 @@
 
 
 
+// const express = require("express");
+// const Chat = require("../models/Chat");
+// const verifyToken = require("../middleware/auth.middleware");
+// const OpenAI = require("openai");
+
+// const router = express.Router();
+
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+// });
+
+// // GET chat history
+// router.get("/", verifyToken, async (req, res) => {
+//   try {
+//     const chat = await Chat.findOne({ userId: req.user.id });
+//     if (!chat) return res.json({ messages: [] });
+//     res.json(chat);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+// // POST message
+// router.post("/", verifyToken, async (req, res) => {
+//   const { message } = req.body;
+//   if (!message) return res.status(400).json({ message: "Message required" });
+
+//   try {
+//     let chat = await Chat.findOne({ userId: req.user.id });
+//     if (!chat) chat = new Chat({ userId: req.user.id, messages: [] });
+
+//     // 1. Add user message to local history
+//     chat.messages.push({ role: "user", content: message });
+
+//     // 2. Call OpenAI using the Chat Completions API
+//     // We pass the entire history so the AI "remembers" the name
+//     const completion = await openai.chat.completions.create({
+//       model: "gpt-4o-mini", // Corrected model name
+//       messages: chat.messages.map(msg => ({
+//         role: msg.role,
+//         content: msg.content
+//       })),
+//     });
+
+//     const aiReply = completion.choices[0].message.content;
+
+//     // 3. Save AI reply to database
+//     chat.messages.push({ role: "assistant", content: aiReply });
+//     await chat.save();
+
+//     return res.json(chat);
+
+//   } catch (err) {
+//     console.error("AI ERROR:", err);
+//     res.status(500).json({
+//       message: "AI server error",
+//       error: err.message,
+//     });
+//   }
+// });
+
+// module.exports = router;
+
+
+
 const express = require("express");
 const Chat = require("../models/Chat");
 const verifyToken = require("../middleware/auth.middleware");
-const OpenAI = require("openai");
+const getOpenAI = require("../config/getOpenAI");  
+
 
 const router = express.Router();
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 // GET chat history
 router.get("/", verifyToken, async (req, res) => {
@@ -724,29 +786,30 @@ router.post("/", verifyToken, async (req, res) => {
     let chat = await Chat.findOne({ userId: req.user.id });
     if (!chat) chat = new Chat({ userId: req.user.id, messages: [] });
 
-    // 1. Add user message to local history
+    // Add user message
     chat.messages.push({ role: "user", content: message });
 
-    // 2. Call OpenAI using the Chat Completions API
-    // We pass the entire history so the AI "remembers" the name
+    // ✅ Create OpenAI client here (inside request)
+    const openai = getOpenAI();
+
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Corrected model name
+      model: "gpt-4o-mini",
       messages: chat.messages.map(msg => ({
         role: msg.role,
-        content: msg.content
+        content: msg.content,
       })),
     });
 
     const aiReply = completion.choices[0].message.content;
 
-    // 3. Save AI reply to database
+    // Save AI reply
     chat.messages.push({ role: "assistant", content: aiReply });
     await chat.save();
 
     return res.json(chat);
 
   } catch (err) {
-    console.error("AI ERROR:", err);
+    console.error("AI ERROR:", err.message);
     res.status(500).json({
       message: "AI server error",
       error: err.message,
