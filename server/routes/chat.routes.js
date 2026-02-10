@@ -761,7 +761,8 @@
 const express = require("express");
 const Chat = require("../models/Chat");
 const verifyToken = require("../middleware/auth.middleware");
-const getOpenAI = require("../config/getOpenAI");  
+const getOpenAI = require("../config/openai"); // <- make sure path is correct
+const openai = getOpenAI(); 
 
 
 const router = express.Router();
