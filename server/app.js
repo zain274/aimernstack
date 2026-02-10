@@ -253,9 +253,53 @@
 
 
 
+// require("dotenv").config({
+//   path: require("path").resolve(__dirname, ".env")
+// });
+// const express = require("express");
+// const mongoose = require("mongoose");
+// const cors = require("cors");
+// const path = require("path");
+
+// const chatRoutes = require("./routes/chat.routes");
+// const authRoutes = require("./routes/auth.routes");
+
+// const app = express();
+
+// app.use(cors());
+// app.use(express.json());
+
+// // Serve React build
+// const buildPath = path.join(__dirname, "../client/reactjs/build");
+// app.use(express.static(buildPath));
+
+// // Routes
+// app.use("/api/auth", authRoutes);
+// app.use("/api/chat", chatRoutes);
+
+// app.get("/api/dashboard", (req, res) => {
+//   res.json({ status: "ok", message: "Server working!" });
+// });
+
+// // MongoDB
+// mongoose.connect(process.env.MONGO_URI)
+//   .then(() => console.log("✅ MongoDB connected"))
+//   .catch(err => console.error("❌ MongoDB error:", err));
+
+// // Port
+// const PORT = process.env.PORT || 8000;
+
+// app.listen(PORT, () => {
+//   console.log(`✅ Server running on port ${PORT}`);
+// });
+
+
+
+// MUST BE FIRST
 require("dotenv").config({
   path: require("path").resolve(__dirname, ".env")
 });
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -266,14 +310,34 @@ const authRoutes = require("./routes/auth.routes");
 
 const app = express();
 
+/* ─────────────────────────────
+   Middleware
+───────────────────────────── */
 app.use(cors());
 app.use(express.json());
 
-// Serve React build
+/* ─────────────────────────────
+   ENV VALIDATION (VERY IMPORTANT)
+───────────────────────────── */
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI is missing in .env");
+  process.exit(1);
+}
+
+if (!process.env.OPENAI_API_KEY) {
+  console.error("❌ OPENAI_API_KEY is missing in .env");
+  process.exit(1);
+}
+
+/* ─────────────────────────────
+   Serve React build
+───────────────────────────── */
 const buildPath = path.join(__dirname, "../client/reactjs/build");
 app.use(express.static(buildPath));
 
-// Routes
+/* ─────────────────────────────
+   Routes
+───────────────────────────── */
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
 
@@ -281,14 +345,26 @@ app.get("/api/dashboard", (req, res) => {
   res.json({ status: "ok", message: "Server working!" });
 });
 
-// MongoDB
-mongoose.connect(process.env.MONGO_URI)
+// React fallback
+app.get("*", (req, res) => {
+  res.sendFile(path.join(buildPath, "index.html"));
+});
+
+/* ─────────────────────────────
+   MongoDB Connection
+───────────────────────────── */
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
-  .catch(err => console.error("❌ MongoDB error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB error:", err.message);
+    process.exit(1);
+  });
 
-// Port
+/* ─────────────────────────────
+   Server
+───────────────────────────── */
 const PORT = process.env.PORT || 8000;
-
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });

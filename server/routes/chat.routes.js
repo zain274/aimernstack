@@ -758,59 +758,149 @@
 
 
 
+// const express = require("express");
+// const Chat = require("../models/Chat");
+// const verifyToken = require("../middleware/auth.middleware");
+// const getOpenAI = require("../config/openai"); // <- make sure path is correct
+// const openai = getOpenAI(); 
+
+
+// const router = express.Router();
+
+// // GET chat history
+// router.get("/", verifyToken, async (req, res) => {
+//   try {
+//     const chat = await Chat.findOne({ userId: req.user.id });
+//     if (!chat) return res.json({ messages: [] });
+//     res.json(chat);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+// // POST message
+// router.post("/", verifyToken, async (req, res) => {
+//   const { message } = req.body;
+//   if (!message) return res.status(400).json({ message: "Message required" });
+
+//   try {
+//     let chat = await Chat.findOne({ userId: req.user.id });
+//     if (!chat) chat = new Chat({ userId: req.user.id, messages: [] });
+
+//     // Add user message
+//     chat.messages.push({ role: "user", content: message });
+
+//     // ✅ Create OpenAI client here (inside request)
+//     const openai = getOpenAI();
+
+//     const completion = await openai.chat.completions.create({
+//       model: "gpt-4o-mini",
+//       messages: chat.messages.map(msg => ({
+//         role: msg.role,
+//         content: msg.content,
+//       })),
+//     });
+
+//     const aiReply = completion.choices[0].message.content;
+
+//     // Save AI reply
+//     chat.messages.push({ role: "assistant", content: aiReply });
+//     await chat.save();
+
+//     return res.json(chat);
+
+//   } catch (err) {
+//     console.error("AI ERROR:", err.message);
+//     res.status(500).json({
+//       message: "AI server error",
+//       error: err.message,
+//     });
+//   }
+// });
+
+// module.exports = router;
+
+
+
 const express = require("express");
 const Chat = require("../models/Chat");
 const verifyToken = require("../middleware/auth.middleware");
-const getOpenAI = require("../config/openai"); // <- make sure path is correct
-const openai = getOpenAI(); 
-
+const getOpenAI = require("../config/openai");
 
 const router = express.Router();
 
-// GET chat history
+/* ─────────────────────────────
+   GET chat history
+───────────────────────────── */
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const chat = await Chat.findOne({ userId: req.user.id });
-    if (!chat) return res.json({ messages: [] });
-    res.json(chat);
+    const chat = await Chat.findOne({ userId: req.user.id }).lean();
+    if (!chat) {
+      return res.json({ messages: [] });
+    }
+    res.json({ messages: chat.messages });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST message
+/* ─────────────────────────────
+   POST user message
+───────────────────────────── */
 router.post("/", verifyToken, async (req, res) => {
   const { message } = req.body;
-  if (!message) return res.status(400).json({ message: "Message required" });
+
+  if (!message) {
+    return res.status(400).json({ message: "Message required" });
+  }
 
   try {
     let chat = await Chat.findOne({ userId: req.user.id });
-    if (!chat) chat = new Chat({ userId: req.user.id, messages: [] });
+
+    if (!chat) {
+      chat = new Chat({
+        userId: req.user.id,
+        messages: [],
+      });
+    }
 
     // Add user message
-    chat.messages.push({ role: "user", content: message });
+    chat.messages.push({
+      role: "user",
+      content: message,
+    });
 
-    // ✅ Create OpenAI client here (inside request)
+    /* ─────────────────────────────
+       OpenAI (SAFE INIT)
+    ───────────────────────────── */
     const openai = getOpenAI();
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: chat.messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
+      messages: chat.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
       })),
+      temperature: 0.7,
     });
 
     const aiReply = completion.choices[0].message.content;
 
-    // Save AI reply
-    chat.messages.push({ role: "assistant", content: aiReply });
+    // Save AI response
+    chat.messages.push({
+      role: "assistant",
+      content: aiReply,
+    });
+
     await chat.save();
 
-    return res.json(chat);
+    res.json({
+      messages: chat.messages,
+    });
 
   } catch (err) {
-    console.error("AI ERROR:", err.message);
+    console.error("❌ AI ERROR:", err);
+
     res.status(500).json({
       message: "AI server error",
       error: err.message,
