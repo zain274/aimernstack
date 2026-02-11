@@ -296,6 +296,88 @@
 
 
 // MUST BE FIRST
+// require("dotenv").config({
+//   path: require("path").resolve(__dirname, ".env")
+// });
+
+
+// app.use(cors({
+//   origin: '*', // For testing, allow all. For security, change to your Domain/IP later.
+//   credentials: true
+// }));
+
+// const express = require("express");
+// const mongoose = require("mongoose");
+// const cors = require("cors");
+// const path = require("path");
+
+// const chatRoutes = require("./routes/chat.routes");
+// const authRoutes = require("./routes/auth.routes");
+
+// const app = express();
+
+// /* ─────────────────────────────
+//    Middleware
+// ───────────────────────────── */
+// app.use(cors());
+// app.use(express.json());
+
+// /* ─────────────────────────────
+//    ENV VALIDATION (VERY IMPORTANT)
+// ───────────────────────────── */
+// if (!process.env.MONGO_URI) {
+//   console.error("❌ MONGO_URI is missing in .env");
+//   process.exit(1);
+// }
+
+// if (!process.env.OPENAI_API_KEY) {
+//   console.error("❌ OPENAI_API_KEY is missing in .env");
+//   process.exit(1);
+// }
+
+// /* ─────────────────────────────
+//    Serve React build
+// ───────────────────────────── */
+// const buildPath = path.join(__dirname, "../client/reactjs/build");
+// app.use(express.static(buildPath));
+
+// /* ─────────────────────────────
+//    Routes
+// ───────────────────────────── */
+// app.use("/api/auth", authRoutes);
+// app.use("/api/chat", chatRoutes);
+
+// app.get("/api/dashboard", (req, res) => {
+//   res.json({ status: "ok", message: "Server working!" });
+// });
+
+// // React fallback
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(buildPath, "index.html"));
+// });
+
+// /* ─────────────────────────────
+//    MongoDB Connection
+// ───────────────────────────── */
+// mongoose
+//   .connect(process.env.MONGO_URI)
+//   .then(() => console.log("✅ MongoDB connected"))
+//   .catch((err) => {
+//     console.error("❌ MongoDB error:", err.message);
+//     process.exit(1);
+//   });
+
+// /* ─────────────────────────────
+//    Server
+// ───────────────────────────── */
+// const PORT = process.env.PORT || 8000;
+// app.listen(PORT, () => {
+//   console.log(`✅ Server running on port ${PORT}`);
+// });
+
+
+
+
 require("dotenv").config({
   path: require("path").resolve(__dirname, ".env")
 });
@@ -308,16 +390,22 @@ const path = require("path");
 const chatRoutes = require("./routes/chat.routes");
 const authRoutes = require("./routes/auth.routes");
 
+// 1. INITIALIZE APP FIRST (Fixes the ReferenceError)
 const app = express();
 
 /* ─────────────────────────────
-   Middleware
+    Middleware
 ───────────────────────────── */
-app.use(cors());
+// 2. CONFIGURE CORS (Only once, at the top)
+app.use(cors({
+  origin: '*', // Allows your AWS frontend to connect to the backend
+  credentials: true
+}));
+
 app.use(express.json());
 
 /* ─────────────────────────────
-   ENV VALIDATION (VERY IMPORTANT)
+    ENV VALIDATION
 ───────────────────────────── */
 if (!process.env.MONGO_URI) {
   console.error("❌ MONGO_URI is missing in .env");
@@ -330,13 +418,13 @@ if (!process.env.OPENAI_API_KEY) {
 }
 
 /* ─────────────────────────────
-   Serve React build
+    Serve React build
 ───────────────────────────── */
 const buildPath = path.join(__dirname, "../client/reactjs/build");
 app.use(express.static(buildPath));
 
 /* ─────────────────────────────
-   Routes
+    Routes
 ───────────────────────────── */
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
@@ -345,13 +433,13 @@ app.get("/api/dashboard", (req, res) => {
   res.json({ status: "ok", message: "Server working!" });
 });
 
-// React fallback
+// React fallback (Must be AFTER other routes)
 app.get("*", (req, res) => {
   res.sendFile(path.join(buildPath, "index.html"));
 });
 
 /* ─────────────────────────────
-   MongoDB Connection
+    MongoDB Connection
 ───────────────────────────── */
 mongoose
   .connect(process.env.MONGO_URI)
@@ -362,7 +450,7 @@ mongoose
   });
 
 /* ─────────────────────────────
-   Server
+    Server
 ───────────────────────────── */
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
